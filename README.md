@@ -16,155 +16,115 @@ On a fresh **Debian/Ubuntu** server, run:
 
 ```bash
 curl -Ls https://raw.githubusercontent.com/<GITHUB_USER>/<REPO_NAME>/main/remote-install.sh | sudo bash
-
+```
 
 This performs:
 
-Install git
-
-Clone repo to /opt/v2rayscan
-
-Install:
-
-Python, pip, venv
-
-SQLite
-
-Xray core
-
-Setup backend virtualenv
-
-Create/update .env
-
-Generate:
-
-ADMIN_USERNAME
-
-ADMIN_PASSWORD
-
-SECRET_KEY
-
-Enable systemd service
-v2rayscan.service
+- Install `git`
+- Clone repo to `/opt/v2rayscan`
+- Install:
+  - Python, pip, venv
+  - SQLite
+  - Xray core
+- Setup backend virtualenv
+- Create/update `.env`
+- Generate:
+  - `ADMIN_USERNAME`
+  - `ADMIN_PASSWORD`
+  - `SECRET_KEY`
+- Enable systemd service  
+  `v2rayscan.service`
 
 At the end, it prints:
 
-✔ Admin login
-✔ Auto-generated username/password
-✔ Panel URL
-✔ Service status
+✔ Admin login  
+✔ Auto-generated username/password  
+✔ Panel URL  
+✔ Service status  
 
-🌐 Web Panel URL
+---
+
+# 🌐 Web Panel URL
 
 After installation:
 
-Local:
+- Local:
+  ```
+  http://127.0.0.1:8000/
+  ```
 
-http://127.0.0.1:8000/
-
-
-From outside:
-
-http://<SERVER_IP>:8000/
-
+- From outside:
+  ```
+  http://<SERVER_IP>:8000/
+  ```
 
 Examples:
 
+```
 http://203.0.113.5:8000/
 http://192.168.1.10:8000/
+```
 
-✨ Features
-🔐 Login System
+---
 
-Session-based authentication
+# ✨ Features
 
-Credentials loaded from .env
+### 🔐 Login System
+- Session-based authentication
+- Credentials loaded from `.env`
+  - `ADMIN_USERNAME`
+  - `ADMIN_PASSWORD`
 
-ADMIN_USERNAME
+### 📡 Server Parsing & Listing
+- Add servers by pasting:
+  - `vless://...`
+  - `vmess://...`
+- Auto-parsing:
+  - host, port, uuid
+  - network (tcp/ws/grpc)
+  - TLS, SNI
+  - Params → JSON
+- Shows:
+  - latest latency
+  - UP/DOWN status
 
-ADMIN_PASSWORD
+### 🔎 Health Monitoring System
+- Background checker loop
+- Configurable `check_interval_seconds`
+- Real proxy testing using **Xray core**
+- Stores history in SQLite (`checks` table)
 
-📡 Server Parsing & Listing
+### 📈 Charts & History
+- Per-server history endpoint:  
+  `GET /api/checks/{server_id}?minutes=N`
+- Real-time chart updates with Chart.js
+- Latency + status graph
 
-Add servers by pasting:
+### 🔥 Real-Time Monitor (WebSocket)
+- WebSocket:
+  `/api/monitor/ws`
+- Live testing of a single link
+- Instant latency & error stream
 
-vless://...
+### 📬 Telegram Notifications
+- When server goes **DOWN**
+- Optional recovery notification (UP)
+- Configurable:
+  - bot token
+  - chat ID
+  - proxy mode
+  - SOCKS or via Xray
+  - down_fail_threshold
 
-vmess://...
+### 🌍 Multi-language UI
+- EN / FA switch
+- All translations in `frontend/js/i18n.js`
 
-Auto-parsing:
+---
 
-host, port, uuid
+# 📁 Project Structure
 
-network (tcp/ws/grpc)
-
-TLS, SNI
-
-Params → JSON
-
-Shows:
-
-latest latency
-
-UP/DOWN status
-
-🔎 Health Monitoring System
-
-Background checker loop
-
-Configurable check_interval_seconds
-
-Real proxy testing using Xray core
-
-Stores history in SQLite (checks table)
-
-📈 Charts & History
-
-Endpoint:
-
-/api/checks/<server_id>?minutes=N
-
-
-Real-time chart updates with Chart.js
-
-Latency + status graph
-
-🔥 Real-Time Monitor (WebSocket)
-
-WebSocket:
-
-/api/monitor/ws
-
-
-Live testing of a single link
-
-Instant latency & error stream
-
-📬 Telegram Notifications
-
-When server goes DOWN
-
-Optional recovery notification (UP)
-
-Configurable:
-
-bot token
-
-chat ID
-
-proxy mode
-
-SOCKS or via Xray
-
-down_fail_threshold
-
-🌍 Multi-language UI
-
-EN / FA switch
-
-All translations in frontend/js/i18n.js
-
-📁 Project Structure
+```text
 .
 ├─ backend/
 │  ├─ app/
@@ -194,59 +154,46 @@ All translations in frontend/js/i18n.js
 ├─ CONTRIBUTING.md
 ├─ CODE_OF_CONDUCT.md
 └─ README.md
+```
 
-🧱 Architecture Overview
-Backend (FastAPI)
+---
 
-Provides:
+# 🧱 Architecture Overview
 
-REST API (/api/*)
+### Backend (FastAPI)
+- Provides:
+  - REST API (`/api/*`)
+  - WebSocket monitor
+  - Static file hosting for frontend
+- Runs background workers:
+  - checker loop
+  - Telegram loop
 
-WebSocket monitor
+### Frontend
+- Plain HTML/JS
+- AJAX using native `fetch`
+- Chart.js graphs
+- No frameworks → lightweight & fast
 
-Static file hosting for frontend
-
-Runs background workers:
-
-checker loop
-
-Telegram loop
-
-Frontend
-
-Plain HTML/JS
-
-AJAX using native fetch
-
-Chart.js graphs
-
-No frameworks → lightweight & fast
-
-Database (SQLite)
-
+### Database (SQLite)
 Tables:
+- `servers`
+- `checks`
+- `settings`
+- `server_groups`
 
-servers
+### Xray Integration
+- Build temporary config for each test
+- Bind socks inbound on random port
+- Perform real HTTP request to `XRAY_TEST_URL`
+- Measure latency
+- Cleanup process
 
-checks
+---
 
-settings
+# 🛠 Manual Installation
 
-server_groups
-
-Xray Integration
-
-Build temporary config for each test
-
-Bind socks inbound on random port
-
-Perform real HTTP request to XRAY_TEST_URL
-
-Measure latency
-
-Cleanup process
-
-🛠 Manual Installation
+```bash
 git clone https://github.com/<GITHUB_USER>/<REPO_NAME>.git
 cd <REPO_NAME>/backend
 
@@ -255,143 +202,89 @@ source venv/bin/activate
 pip install -r requirements.txt
 
 cp .env.example .env
-
+```
 
 Run server:
 
+```bash
 python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
-
+```
 
 Open:
 
+```
 http://localhost:8000/
+```
 
-⚙️ Environment Variables
+---
 
-Located in: backend/.env
+# ⚙️ Environment Variables
 
-Key	Description
-DB_URL	SQLite database path
-XRAY_PATH	Path to xray binary
-XRAY_TEST_URL	URL used for testing proxies
-XRAY_STARTUP_DELAY	Delay after starting xray
-XRAY_REQUEST_TIMEOUT	Timeout for normal checks
-XRAY_MONITOR_REQUEST_TIMEOUT	Timeout for live checks
-ADMIN_USERNAME	Panel login user
-ADMIN_PASSWORD	Panel login pass
-SECRET_KEY	Session signing secret
+| Key | Description |
+|------|-------------|
+| `DB_URL` | SQLite database path |
+| `XRAY_PATH` | Path to xray binary |
+| `XRAY_TEST_URL` | URL used for testing |
+| `XRAY_STARTUP_DELAY` | Delay after starting xray |
+| `XRAY_REQUEST_TIMEOUT` | Timeout for checks |
+| `XRAY_MONITOR_REQUEST_TIMEOUT` | Timeout for live checks |
+| `ADMIN_USERNAME` | Panel user |
+| `ADMIN_PASSWORD` | Panel pass |
+| `SECRET_KEY` | Session signing secret |
 
-Installer automatically generates:
+Installer auto-generates:
 
-ADMIN_USERNAME
+- `ADMIN_USERNAME`
+- `ADMIN_PASSWORD`
+- `SECRET_KEY`
 
-ADMIN_PASSWORD
+---
 
-SECRET_KEY
+# 🔍 Troubleshooting
 
-🔍 Troubleshooting
+Check service:
 
-Check service status:
-
+```bash
 sudo systemctl status v2rayscan.service
+```
 
+Logs:
 
-View logs:
-
+```bash
 sudo journalctl -u v2rayscan.service -f
+```
 
+---
 
-Common issues:
+# 🔐 Security
 
-❗ Xray not found
+- Never commit `.env`
+- Use strong credentials
+- Prefer HTTPS with Nginx/Caddy
+- Consider firewall restrictions
 
-Check path in .env:
+---
 
-XRAY_PATH=/usr/local/bin/xray
+# 🇮🇷 راهنمای فارسی
 
-❗ Panel not loading
+**نصب سریع:**
 
-Ensure port 8000 is open:
-
-sudo ufw allow 8000
-
-
-If behind reverse proxy, verify host headers.
-
-❗ Telegram not working
-
-Check bot token
-
-Check chat ID
-
-Check proxy mode
-
-🧑‍💻 Development
-git clone https://github.com/<GITHUB_USER>/<REPO_NAME>.git
-cd <REPO_NAME>/backend
-
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-
-cp .env.example .env
-
-
-Run with live reload:
-
-python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-
-🔐 Security Notes
-
-Never commit .env
-
-Use strong admin credentials
-
-Prefer HTTPS (use Nginx/Caddy)
-
-Limit panel access using firewall or VPN
-
-📄 License
-
-This project is licensed under the MIT License.
-See the LICENSE file for more info.
-
-🇮🇷 راهنمای فارسی (خلاصه)
-
-نصب سریع روی سرور:
-
+```bash
 curl -Ls https://raw.githubusercontent.com/<GITHUB_USER>/<REPO_NAME>/main/remote-install.sh | sudo bash
-
+```
 
 بعد از نصب:
 
-آدرس پنل:
-http://IP:8000/
+- آدرس پنل: `http://IP:8000/`
+- یوزرنیم و پسورد داخل `.env` و خروجی نصب نمایش داده می‌شود.
 
-یوزر و پسورد ورود:
-→ در خروجی نصب نمایش داده می‌شود
-→ داخل backend/.env ذخیره می‌شود
+پنل قابلیت:
+- مانیتورینگ VMESS/VLESS  
+- نمودار پینگ  
+- مانیتور لحظه‌ای  
+- گروه‌بندی  
+- نوتیفیکیشن تلگرام  
+- زبان فارسی/انگلیسی  
+را دارد.
 
-امکانات:
-
-مانیتورینگ لینک‌های VMESS/VLESS
-
-نمودار پینگ
-
-مانیتورینگ لحظه‌ای
-
-نوتیفیکیشن تلگرام
-
-گروه‌بندی سرورها
-
-رابط کاربری انگلیسی/فارسی
-
-پشتیبانی از پروکسی تلگرام:
-
-مستقیم
-
-SOCKS5
-
-استفاده از یکی از سرورها با Xray
-
-Pull Requests and Issues are welcome! ✨
+Pull Requests are welcome!
