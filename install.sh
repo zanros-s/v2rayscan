@@ -55,9 +55,11 @@ echo
 # 0) Detect existing installation
 #############################################
 EXISTS=0
-if [ -d "${INSTALL_DIR}" ] || [ -f "${ENV_FILE}" ] || [ -f "${SERVICE_FILE}" ]; then
+# We only consider it an existing installation if runtime artifacts exist
+if [ -f "${ENV_FILE}" ] || [ -d "${VENV_DIR}" ] || [ -f "${SERVICE_FILE}" ]; then
     EXISTS=1
 fi
+
 
 if [ "$EXISTS" -eq 1 ]; then
     echo "Detected an existing v2rayscan installation on this server."
