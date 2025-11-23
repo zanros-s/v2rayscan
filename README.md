@@ -15,7 +15,7 @@ v2rayscan is designed for VPS monitoring, uptime measuring, real-time diagnostic
 On a fresh **Debian/Ubuntu** server, run:
 
 ```bash
-curl -Ls https://raw.githubusercontent.com/<GITHUB_USER>/<REPO_NAME>/main/remote-install.sh | sudo bash
+curl -Ls https://raw.githubusercontent.com/zanros-s/v2rayscan/main/remote-install.sh | sudo bash
 ```
 
 This performs:
@@ -194,8 +194,8 @@ Tables:
 # 🛠 Manual Installation
 
 ```bash
-git clone https://github.com/<GITHUB_USER>/<REPO_NAME>.git
-cd <REPO_NAME>/backend
+git clone https://github.com/zanros-s/v2rayscan.git
+cd v2rayscan/backend
 
 python3 -m venv venv
 source venv/bin/activate
@@ -270,7 +270,7 @@ sudo journalctl -u v2rayscan.service -f
 **نصب سریع:**
 
 ```bash
-curl -Ls https://raw.githubusercontent.com/<GITHUB_USER>/<REPO_NAME>/main/remote-install.sh | sudo bash
+curl -Ls https://raw.githubusercontent.com/zanros-s/v2rayscan/main/remote-install.sh | sudo bash
 ```
 
 بعد از نصب:
