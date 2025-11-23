@@ -88,47 +88,60 @@ if [ "$EXISTS" -eq 1 ]; then
     echo "  Username  : ${CURRENT_ADMIN_USER}"
     echo "  Password  : ${CURRENT_ADMIN_PASS}"
     echo
-    echo "What do you want to do?"
-    echo "  1) Show service logs"
-    echo "  2) Reinstall (remove runtime files and install again)"
-    echo "  3) Exit (do nothing)"
-    echo
+echo "What do you want to do?"
+echo "  1) Show service logs"
+echo "  2) Reinstall (remove runtime files and install again)"
+echo "  3) Exit (do nothing)"
+echo
 
+# Read choice from the real terminal (even if the script is piped via curl | bash)
+if [ -t 0 ]; then
+    # stdin is a TTY
     read -rp "Select an option [1-3]: " choice
-    case "$choice" in
-        1)
-            echo
-            echo "Showing last 100 log lines for ${SERVICE_NAME} (Ctrl+C to exit):"
-            echo
-            journalctl -u "${SERVICE_NAME}" -n 100 -f || echo "No logs available or service not found."
-            exit 0
-            ;;
-        2)
-            echo
-            echo "Reinstall selected."
-            echo "Stopping and disabling existing service (if any)..."
-            systemctl stop "${SERVICE_NAME}" 2>/dev/null || true
-            systemctl disable "${SERVICE_NAME}" 2>/dev/null || true
-            rm -f "${SERVICE_FILE}" || true
-            systemctl daemon-reload || true
-
-            echo "Removing existing virtual environment and runtime files..."
-            rm -rf "${VENV_DIR}" 2>/dev/null || true
-            rm -f "${ENV_FILE}" 2>/dev/null || true
-            # Remove local SQLite DBs in backend directory (if any)
-            if [ -d "${BACKEND_DIR}" ]; then
-                find "${BACKEND_DIR}" -maxdepth 1 -type f -name "*.db" -delete 2>/dev/null || true
-            fi
-
-            echo "Old installation cleaned. Continuing with fresh install..."
-            echo
-            ;;
-        3|*)
-            echo "Exiting without making any changes."
-            exit 0
-            ;;
-    esac
+else
+    # stdin is not a TTY (e.g. curl | bash), read from /dev/tty
+    if [ -e /dev/tty ]; then
+        read -rp "Select an option [1-3]: " choice </dev/tty || choice=3
+    else
+        echo "No interactive TTY available, defaulting to: Exit"
+        choice=3
+    fi
 fi
+
+case "$choice" in
+    1)
+        echo
+        echo "Showing last 100 log lines for ${SERVICE_NAME} (Ctrl+C to exit):"
+        echo
+        journalctl -u "${SERVICE_NAME}" -n 100 -f || echo "No logs available or service not found."
+        exit 0
+        ;;
+    2)
+        echo
+        echo "Reinstall selected."
+        echo "Stopping and disabling existing service (if any)..."
+        systemctl stop "${SERVICE_NAME}" 2>/dev/null || true
+        systemctl disable "${SERVICE_NAME}" 2>/dev/null || true
+        rm -f "${SERVICE_FILE}" || true
+        systemctl daemon-reload || true
+
+        echo "Removing existing virtual environment and runtime files..."
+        rm -rf "${VENV_DIR}" 2>/dev/null || true
+        rm -f "${ENV_FILE}" 2>/dev/null || true
+        # Remove local SQLite DBs in backend directory (if any)
+        if [ -d "${BACKEND_DIR}" ]; then
+            find "${BACKEND_DIR}" -maxdepth 1 -type f -name "*.db" -delete 2>/dev/null || true
+        fi
+
+        echo "Old installation cleaned. Continuing with fresh install..."
+        echo
+        ;;
+    3|*)
+        echo "Exiting without making any changes."
+        exit 0
+        ;;
+esac
+
 
 #############################################
 # 1) Install system dependencies
