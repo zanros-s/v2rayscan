@@ -142,6 +142,7 @@ case "$choice" in
         ;;
 esac
 
+fi
 
 #############################################
 # 1) Install system dependencies
