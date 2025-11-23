@@ -22,6 +22,7 @@ BACKEND_SUBDIR="backend"
 BACKEND_DIR="${INSTALL_DIR}/${BACKEND_SUBDIR}"
 ENV_FILE="${BACKEND_DIR}/.env"
 VENV_DIR="${BACKEND_DIR}/venv"
+SERVICE_FILE="/etc/systemd/system/${SERVICE_NAME}"
 
 if [ "$EUID" -ne 0 ]; then
     echo "Please run this script as root, for example:"
@@ -51,11 +52,112 @@ echo "============================================="
 echo
 
 #############################################
+# 0) Detect existing installation
+#############################################
+EXISTS=0
+if [ -d "${INSTALL_DIR}" ] || [ -f "${ENV_FILE}" ] || [ -f "${SERVICE_FILE}" ]; then
+    EXISTS=1
+fi
+
+if [ "$EXISTS" -eq 1 ]; then
+    echo "Detected an existing v2rayscan installation on this server."
+    echo
+
+    # Try to read current admin credentials from .env
+    CURRENT_ADMIN_USER="(unknown)"
+    CURRENT_ADMIN_PASS="(unknown)"
+    if [ -f "${ENV_FILE}" ]; then
+        tmp_user="$(grep -E '^ADMIN_USERNAME=' "${ENV_FILE}" 2>/dev/null | head -n1 | sed 's/^ADMIN_USERNAME=//')"
+        tmp_pass="$(grep -E '^ADMIN_PASSWORD=' "${ENV_FILE}" 2>/dev/null | head -n1 | sed 's/^ADMIN_PASSWORD=//')"
+        if [ -n "${tmp_user}" ]; then
+            CURRENT_ADMIN_USER="${tmp_user}"
+        fi
+        if [ -n "${tmp_pass}" ]; then
+            CURRENT_ADMIN_PASS="${tmp_pass}"
+        fi
+    fi
+
+    SERVER_IP="$(hostname -I 2>/dev/null | awk '{print $1}')"
+    if [ -z "${SERVER_IP}" ]; then
+        SERVER_IP="SERVER_IP"
+    fi
+    PANEL_URL="http://${SERVER_IP}:${APP_PORT}/"
+
+    echo "Current installation details:"
+    echo "  Panel URL : ${PANEL_URL}"
+    echo "  Username  : ${CURRENT_ADMIN_USER}"
+    echo "  Password  : ${CURRENT_ADMIN_PASS}"
+    echo
+    echo "What do you want to do?"
+    echo "  1) Show service logs"
+    echo "  2) Reinstall (remove runtime files and install again)"
+    echo "  3) Exit (do nothing)"
+    echo
+
+    read -rp "Select an option [1-3]: " choice
+    case "$choice" in
+        1)
+            echo
+            echo "Showing last 100 log lines for ${SERVICE_NAME} (Ctrl+C to exit):"
+            echo
+            journalctl -u "${SERVICE_NAME}" -n 100 -f || echo "No logs available or service not found."
+            exit 0
+            ;;
+        2)
+            echo
+            echo "Reinstall selected."
+            echo "Stopping and disabling existing service (if any)..."
+            systemctl stop "${SERVICE_NAME}" 2>/dev/null || true
+            systemctl disable "${SERVICE_NAME}" 2>/dev/null || true
+            rm -f "${SERVICE_FILE}" || true
+            systemctl daemon-reload || true
+
+            echo "Removing existing virtual environment and runtime files..."
+            rm -rf "${VENV_DIR}" 2>/dev/null || true
+            rm -f "${ENV_FILE}" 2>/dev/null || true
+            # Remove local SQLite DBs in backend directory (if any)
+            if [ -d "${BACKEND_DIR}" ]; then
+                find "${BACKEND_DIR}" -maxdepth 1 -type f -name "*.db" -delete 2>/dev/null || true
+            fi
+
+            echo "Old installation cleaned. Continuing with fresh install..."
+            echo
+            ;;
+        3|*)
+            echo "Exiting without making any changes."
+            exit 0
+            ;;
+    esac
+fi
+
+#############################################
 # 1) Install system dependencies
 #############################################
 echo "[1/6] Updating apt and installing packages..."
 apt update -y
 apt install -y python3 python3-venv python3-pip sqlite3 curl
+
+# ---- Python presence & version check (>= 3.10 required) ----
+if ! command -v python3 >/dev/null 2>&1; then
+    echo "ERROR: python3 could not be found even after installation."
+    echo "Please install Python 3.10+ manually and re-run this installer."
+    exit 1
+fi
+
+PYTHON_VERSION="$(python3 -c 'import sys; print(".".join(map(str, sys.version_info[:3])))')"
+PY_MAJOR="$(echo "$PYTHON_VERSION" | cut -d. -f1)"
+PY_MINOR="$(echo "$PYTHON_VERSION" | cut -d. -f2)"
+
+if [ "$PY_MAJOR" -lt 3 ] || { [ "$PY_MAJOR" -eq 3 ] && [ "$PY_MINOR" -lt 10 ]; }; then
+    echo "ERROR: Python 3.10+ is required to run v2rayscan."
+    echo "Detected python3 version: ${PYTHON_VERSION}"
+    echo "Please upgrade Python on this server (for example by using a newer OS version)"
+    echo "and then re-run this installer."
+    exit 1
+fi
+
+echo "Detected python3 version: ${PYTHON_VERSION} (OK)"
+echo
 
 #############################################
 # 2) Install Xray core
@@ -188,7 +290,7 @@ for key, value in keys.items():
     if key not in seen:
         output.append(f"{key}={value}")
 
-env_path.write_text("\n".join(output) + "\n")
+env_path.write_text("\\n".join(output) + "\\n")
 PY
 
 echo "[5/6] Admin credentials written to ${ENV_FILE}"
@@ -198,8 +300,6 @@ echo
 # 6) Create and start systemd service
 #############################################
 echo "[6/6] Creating systemd service ${SERVICE_NAME} ..."
-
-SERVICE_FILE="/etc/systemd/system/${SERVICE_NAME}"
 
 cat > "${SERVICE_FILE}" <<EOF
 [Unit]
