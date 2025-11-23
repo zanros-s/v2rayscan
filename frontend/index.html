@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <title>v2rayscan</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="js/i18n.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+<div class="container">
+    <header class="top-bar">
+        <h1 data-i18n="layout.app_title"></h1>
+        <select id="header-lang" class="lang-select">
+            <option value="en">EN</option>
+            <option value="fa">FA</option>
+        </select>
+    </header>
+
+
+    <section class="card" id="settings-section">
+        <h2 data-i18n="settings.title"></h2>
+        <div class="form-row">
+            <label for="telegram-bot-token" data-i18n="settings.telegram_bot_token"></label>
+            <input id="telegram-bot-token" type="text"
+                data-i18n-placeholder="settings.telegram_bot_token.placeholder">
+        </div>
+        <div class="form-row">
+            <label for="telegram-chat-id" data-i18n="settings.telegram_chat_id"></label>
+            <input id="telegram-chat-id" type="text"
+                data-i18n-placeholder="settings.telegram_chat_id.placeholder">
+        </div>
+        <div class="form-row">
+            <label for="check-interval" data-i18n="settings.check_interval"></label>
+            <input id="check-interval" type="number" min="5" value="30">
+        </div>
+        <div class="form-row checkbox-row">
+            <label>
+                <input id="notify-on-recover" type="checkbox">
+                <span data-i18n="settings.telegram.notify_recover"></span>
+            </label>
+        </div>
+        <div class="form-row">
+            <label for="down-fail-threshold" data-i18n="settings.telegram.down_threshold"></label>
+            <input
+                id="down-fail-threshold"
+                type="number"
+                min="1"
+                value="3"
+                placeholder="3">
+            <small data-i18n="settings.telegram.down_threshold.help"></small>
+        </div>
+
+
+        <hr style="margin: 12px 0; border-color:#1f2937;">
+
+        <h3 style="font-size:0.95rem;margin-top:0;"
+    data-i18n="settings.proxy.title"></h3>
+
+        <div class="form-row checkbox-row">
+            <label>
+                <input id="telegram-use-proxy" type="checkbox">
+                <span data-i18n="settings.proxy.use_proxy"></span>
+            </label>
+        </div>
+
+        <div class="form-row">
+            <label for="telegram-proxy-mode" data-i18n="settings.proxy.mode"></label>
+            <select id="telegram-proxy-mode">
+                <option value="none" data-i18n="settings.proxy.mode.none"></option>
+                <option value="socks" data-i18n="settings.proxy.mode.socks"></option>
+                <option value="server" data-i18n="settings.proxy.mode.server"></option>
+            </select>
+        </div>
+
+        <div class="form-row proxy-socks-row">
+            <label for="telegram-socks-host" data-i18n="settings.proxy.socks_host.placeholder"></label>
+            <input id="telegram-socks-host" type="text"
+       data-i18n-placeholder="settings.proxy.socks_host.placeholder">
+        </div>
+        <div class="form-row proxy-socks-row">
+            <label for="telegram-socks-port" data-i18n="settings.proxy.socks_port.placeholder"></label>
+            <input id="telegram-socks-port" type="number" data-i18n-placeholder="settings.proxy.socks_port.placeholder">
+        </div>
+        <div class="form-row proxy-socks-row">
+            <label for="telegram-socks-username" data-i18n="settings.proxy.socks_user"></label>
+            <input id="telegram-socks-username" type="text">
+        </div>
+        <div class="form-row proxy-socks-row">
+            <label for="telegram-socks-password" data-i18n="settings.proxy.socks_pass"></label>
+            <input id="telegram-socks-password" type="password">
+        </div>
+
+        <div class="form-row proxy-server-row">
+            <label for="telegram-server-id" data-i18n="settings.proxy.server_id"></label>
+            <input id="telegram-server-id" type="number"
+                data-i18n-placeholder="settings.proxy.server_id">
+        </div>
+
+
+        <button onclick="saveSettings()" data-i18n="settings.button.save"></button>
+        <span id="settings-status" class="status-text"></span>
+    </section>
+    <section class="card" id="live-monitor-section">
+        <h2 data-i18n="live.title"></h2>
+
+        <div class="form-row">
+            <label for="live-link" data-i18n="live.link.label"></label>
+            <input id="live-link" type="text" placeholder="vless://..." style="direction:ltr;" data-i18n-placeholder="live.link.label">
+        </div>
+
+        <div class="form-row">
+            <label for="live-interval" data-i18n="live.interval.label"></label>
+            <input id="live-interval" type="number" min="0.1" step="0.1" value="1.0">
+        </div>
+
+        <div class="form-row">
+            <button
+                id="live-start-btn"
+                type="button"
+                onclick="window.startLiveMonitor()"
+                data-i18n="live.start"
+            ></button>
+            <button
+                id="live-stop-btn"
+                type="button"
+                onclick="window.stopLiveMonitor()"
+                disabled
+                data-i18n="live.stop"
+            ></button>
+        </div>
+
+        <p id="live-status" class="status-text"></p>
+
+        <div id="live-metrics" class="live-metrics">
+            <div><span data-i18n="live.metrics.total"></span><span id="live-total">0</span></div>
+            <div><span data-i18n="live.metrics.success"></span><span id="live-success">0</span></div>
+            <div><span data-i18n="live.metrics.down"></span><span id="live-down">0</span></div>
+            <div><span data-i18n="live.metrics.success_rate"></span><span id="live-success-rate">0%</span></div>
+            <div><span data-i18n="live.metrics.avg_latency"></span><span id="live-avg-latency">0 ms</span></div>
+            <div><span data-i18n="live.metrics.last_latency"></span><span id="live-last-latency">-</span></div>
+            <div><span data-i18n="live.metrics.consecutive_down"></span><span id="live-consecutive-down">0</span></div>
+            <div><span data-i18n="live.metrics.last_error"></span><span id="live-last-error">-</span></div>
+        </div>
+
+        <div class="live-chart-wrapper">
+            <canvas id="live-chart"></canvas>
+        </div>
+    </section>
+
+
+    <section class="card" id="add-server-section">
+        <h2 data-i18n="addserver.title"></h2>
+        <div class="form-row">
+            <label for="server-name" data-i18n="addserver.name.label"></label>
+            <input id="server-name" type="text"
+                data-i18n-placeholder="addserver.name.placeholder">
+        </div>
+        <div class="form-row">
+            <label for="server-link" data-i18n="addserver.link.label"></label>
+            <textarea id="server-link" rows="3"
+                    data-i18n-placeholder="addserver.link.placeholder"></textarea>
+        </div>
+        <button onclick="addServer()" data-i18n="addserver.button"></button>
+        <span id="add-server-status" class="status-text"></span>
+    </section>
+
+
+    <section class="card" id="servers-section">
+        <h2 data-i18n="servers.title"></h2>
+
+        <div class="servers-toolbar">
+            <div id="server-groups-bar" class="group-pill-bar">
+                <!-- با JS پر می‌شود -->
+            </div>
+            <button id="add-group-btn" type="button" data-i18n="groups.new"></button>
+        </div>
+
+        <table id="servers-table">
+            <thead>
+            <tr>
+                <th data-i18n="servers.column.id"></th>
+                <th data-i18n="servers.column.name"></th>
+                <th data-i18n="servers.column.group"></th>
+                <th data-i18n="servers.column.address"></th>
+                <th data-i18n="servers.column.type"></th>
+                <th class="raw-link-col" data-i18n="servers.column.raw_link"></th>
+                <th data-i18n="servers.column.status"></th>
+                <th data-i18n="servers.column.latency"></th>
+                <th data-i18n="servers.column.last_check"></th>
+                <th class="actions-col" data-i18n="servers.column.actions"></th>
+
+            </tr>
+            </thead>
+
+            <tbody>
+            <!-- ردیف‌ها با JS پر می‌شوند -->
+            </tbody>
+        </table>
+    </section>
+
+
+
+    <section class="card" id="chart-section" style="display: none;">
+        <div class="chart-header">
+            <h2 id="chart-title" data-i18n="chart.title"></h2>
+
+
+            <div class="chart-meta">
+                
+                <div class="chart-range">
+                    <label for="chart-range-select" data-i18n="chart.range.label"></label>
+                    <select id="chart-range-select">
+                        <option value="60" data-i18n="chart.range.60"></option>
+                        <option value="180" data-i18n="chart.range.180"></option>
+                        <option value="720" data-i18n="chart.range.720"></option>
+                        <option value="1440" data-i18n="chart.range.1440"></option>
+                        <option value="10080" data-i18n="chart.range.10080"></option>
+                    </select>
+                </div>
+
+                
+                <div id="chart-stats" class="chart-stats" data-i18n="chart.stats"></div>
+
+            </div>
+        </div>
+
+        <canvas id="server-chart" height="120"></canvas>
+    </section>
+
+
+
+</div>
+<div id="server-edit-modal" class="modal hidden">
+    <div class="modal-backdrop"></div>
+    <div class="modal-content">
+        <h3 data-i18n="edit.title"></h3>
+
+        <div class="form-row">
+            <label for="edit-server-name" data-i18n="edit.name"></label>
+            <input id="edit-server-name" type="text">
+        </div>
+
+        <div class="form-row">
+            <label for="edit-server-group" data-i18n="edit.group"></label>
+            <select id="edit-server-group">
+                <option value="" data-i18n="edit.group.none"></option>
+            </select>
+        </div>
+
+        <div class="form-row">
+            <label for="edit-server-link" data-i18n="edit.link"></label>
+            <textarea id="edit-server-link" rows="3" style="direction:ltr;"></textarea>
+        </div>
+
+        <div class="form-row">
+            <label>
+                <input type="checkbox" id="edit-server-enabled">
+                <span data-i18n="edit.enabled"></span>
+            </label>
+        </div>
+
+        <div class="modal-actions">
+            <button type="button" id="server-edit-cancel" data-i18n="edit.cancel"></button>
+            <button type="submit" id="server-edit-save" data-i18n="edit.save"></button>
+        </div>
+
+        </form>
+    </div>
+</div>
+
+<script src="js/charts.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>

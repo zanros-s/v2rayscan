@@ -1,0 +1,8 @@
+fastapi
+uvicorn[standard]
+SQLAlchemy
+python-dotenv
+pydantic
+requests[socks]
+python-multipart
+itsdangerous
