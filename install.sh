@@ -92,7 +92,7 @@ if [ "$EXISTS" -eq 1 ]; then
     echo
 echo "What do you want to do?"
 echo "  1) Show service logs"
-echo "  2) Reinstall (remove runtime files and install again)"
+echo "  2)Update - Reinstall (remove runtime files and install again)"
 echo "  3) Exit (do nothing)"
 echo
 
