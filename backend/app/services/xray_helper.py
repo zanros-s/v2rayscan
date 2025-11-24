@@ -11,7 +11,7 @@ import requests
 
 from ..config import settings
 from .. import models
-
+from .xray_link_converter import convert_uri_json
 
 def find_free_port() -> int:
 
@@ -24,7 +24,6 @@ def find_free_port() -> int:
 
 def build_xray_config_for_server(server: models.Server, socks_port: int) -> dict:
 
-
     params = {}
     if server.params_json:
         try:
@@ -34,9 +33,38 @@ def build_xray_config_for_server(server: models.Server, socks_port: int) -> dict
 
     proto = (server.type or "").lower()
 
-    # فقط این دو پروتکل فعلاً پشتیبانی می‌شن
+    
+    raw_link = (getattr(server, "raw_link", "") or "").strip()
+
+    
+    if raw_link.startswith("trojan://"):
+        http_port = socks_port + 1
+        cfg = convert_uri_json(
+            host="127.0.0.1",
+            port=http_port,
+            socksport=socks_port,
+            uri=raw_link,
+        )
+        if cfg is None:
+            raise ValueError("Failed to build XRAY config from trojan URI")
+        return cfg
+
+    
+    if "type=grpc" in raw_link:
+        http_port = socks_port + 1
+        cfg = convert_uri_json(
+            host="127.0.0.1",
+            port=http_port,
+            socksport=socks_port,
+            uri=raw_link,
+        )
+        if cfg is None:
+            raise ValueError("Failed to build XRAY config from gRPC URI")
+        return cfg
+
     if proto not in ("vless", "vmess"):
         raise ValueError(f"XRAY config only implemented for VLESS/VMESS, got: {proto}")
+
 
     if not server.uuid:
         raise ValueError("Server has no UUID/ID (required for VLESS/VMESS)")
