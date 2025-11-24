@@ -204,6 +204,52 @@ def parse_vmess(url: str) -> ParsedLink:
         raw_link=url,
     )
 
+# ---------------- TROJAN ----------------
+def parse_trojan(url: str) -> ParsedLink:
+    u = urlparse(url)
+    if u.scheme.lower() != "trojan":
+        raise ValueError("Not a trojan URL")
+
+    
+    if "@" not in u.netloc:
+        raise ValueError("Invalid trojan URL: missing password")
+
+    password, _ = u.netloc.split("@", 1)
+
+    host = u.hostname
+    port = u.port
+    if not host or not port:
+        raise ValueError("Invalid trojan URL: missing host or port")
+
+    fragment = unquote(u.fragment) if u.fragment else None
+    q = parse_qs(u.query)
+
+    security = q.get("security", [None])[0]
+    sni = q.get("sni", [None])[0]
+    network = (
+        q.get("type", [None])[0]
+        or q.get("net", [None])[0]
+        or "tcp"
+    )
+
+   
+    params = {k: v[0] for k, v in q.items()}
+    params["password"] = password
+
+    name = fragment or host or "unnamed"
+
+    return ParsedLink(
+        type_="trojan",
+        name=name,
+        host=host,
+        port=port,
+        uuid=None,           
+        security=security,
+        sni=sni,
+        network=network,
+        params=params,
+        raw_link=url,
+    )
 
 # ---------------- Router ----------------
 def parse_link(url: str) -> ParsedLink:
@@ -215,5 +261,7 @@ def parse_link(url: str) -> ParsedLink:
         return parse_vless(url)
     if scheme == "vmess":
         return parse_vmess(url)
+    if scheme == "trojan":
+        return parse_trojan(url)
 
     raise ValueError(f"Unsupported scheme: {scheme or 'unknown'}")
